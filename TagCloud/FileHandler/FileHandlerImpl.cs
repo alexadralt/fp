@@ -2,6 +2,7 @@ using System.Drawing;
 using TagCloud.FileReader;
 using TagCloud.ImageFileWriter;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.FileHandler;
 
@@ -16,9 +17,20 @@ public class FileHandlerImpl(
         var extension = Path.GetExtension(filePath);
         if (readerRegistry.TryGetFileReader(extension, out var fileReader))
         {
-            fileReader.OpenFile(Path.GetFullPath(filePath));
-            while (fileReader.TryGetNextLine(out var line))
-                yield return line;
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath)); 
+            if (!openFileResult.Success)
+            {
+                logger.Error($"Failed to open file: {openFileResult.Error}");
+                yield break;
+            }
+            
+            Result<string> result = fileReader.GetNextLine();
+            while(result.Success)
+            {
+                yield return result.Value!;
+                result = fileReader.GetNextLine();
+            }
+            
             readerRegistry.ReturnFileReader(fileReader);
         }
         else

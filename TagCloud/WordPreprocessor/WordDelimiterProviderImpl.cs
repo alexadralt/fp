@@ -38,9 +38,20 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         if (_fileReaderRegistry.TryGetFileReader(extension, out var fileReader))
         {
             _logger.Info("Loading delimiters file.");
-            fileReader.OpenFile(Path.GetFullPath(path));
-            while (fileReader.TryGetNextLine(out var line))
-                _delimiters.Add(line);
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(path)); 
+            if (!openFileResult.Success)
+            {
+                _logger.Error($"Failed to open file: {openFileResult.Error}");
+                return;
+            }
+            
+            var result = fileReader.GetNextLine();
+            while (result.Success)
+            {
+                _delimiters.Add(result.Value!);
+                result = fileReader.GetNextLine();
+            }
+            
             _fileReaderRegistry.ReturnFileReader(fileReader);
         }
         else

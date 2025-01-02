@@ -24,9 +24,20 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogg
         if (fileReaderRegistry.TryGetFileReader(extension, out var fileReader))
         {
             logger.Info("Loading boring words file.");
-            fileReader.OpenFile(Path.GetFullPath(filePath));
-            while (fileReader.TryGetNextLine(out var line))
-                _boringWords.Add(line);
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath)); 
+            if (!openFileResult.Success)
+            {
+                logger.Error($"Failed to open file: {openFileResult.Error}");
+                return;
+            }
+            
+            var result = fileReader.GetNextLine();
+            while (result.Success)
+            {
+                _boringWords.Add(result.Value!);
+                result = fileReader.GetNextLine();
+            }
+            
             fileReaderRegistry.ReturnFileReader(fileReader);
         }
         else

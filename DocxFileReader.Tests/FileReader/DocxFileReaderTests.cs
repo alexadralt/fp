@@ -38,8 +38,12 @@ public class DocxFileReaderTests
         var inputFile = "./../../../BasicFile.docx";
         _docxFileReader.OpenFile(Path.GetFullPath(inputFile));
 
-        while (_docxFileReader.TryGetNextLine(out var line))
-            _stringBuilder.AppendLine(line);
+        var result = _docxFileReader.GetNextLine();
+        while (result.Success)
+        {
+            _stringBuilder.AppendLine(result.Value!);
+            result = _docxFileReader.GetNextLine();
+        }
         
         return Verifier.Verify(_stringBuilder.ToString());
     }
@@ -50,8 +54,12 @@ public class DocxFileReaderTests
         var inputFile = "./../../../FileWithHeaders.docx";
         _docxFileReader.OpenFile(Path.GetFullPath(inputFile));
 
-        while (_docxFileReader.TryGetNextLine(out var line))
-            _stringBuilder.AppendLine(line);
+        var result = _docxFileReader.GetNextLine();
+        while (result.Success)
+        {
+            _stringBuilder.AppendLine(result.Value!);
+            result = _docxFileReader.GetNextLine();
+        }
         
         return Verifier.Verify(_stringBuilder.ToString());
     }
@@ -62,8 +70,12 @@ public class DocxFileReaderTests
         var inputFile = "./../../../FileWithBulletList.docx";
         _docxFileReader.OpenFile(Path.GetFullPath(inputFile));
 
-        while (_docxFileReader.TryGetNextLine(out var line))
-            _stringBuilder.AppendLine(line);
+        var result = _docxFileReader.GetNextLine();
+        while (result.Success)
+        {
+            _stringBuilder.AppendLine(result.Value!);
+            result = _docxFileReader.GetNextLine();
+        }
         
         return Verifier.Verify(_stringBuilder.ToString());
     }
@@ -74,8 +86,12 @@ public class DocxFileReaderTests
         var inputFile = "./../../../FileWithNumberedList.docx";
         _docxFileReader.OpenFile(Path.GetFullPath(inputFile));
 
-        while (_docxFileReader.TryGetNextLine(out var line))
-            _stringBuilder.AppendLine(line);
+        var result = _docxFileReader.GetNextLine();
+        while (result.Success)
+        {
+            _stringBuilder.AppendLine(result.Value!);
+            result = _docxFileReader.GetNextLine();
+        }
         
         return Verifier.Verify(_stringBuilder.ToString());
     }
@@ -86,8 +102,12 @@ public class DocxFileReaderTests
         var inputFile = "./../../../BigFile.docx";
         _docxFileReader.OpenFile(Path.GetFullPath(inputFile));
 
-        while (_docxFileReader.TryGetNextLine(out var line))
-            _stringBuilder.AppendLine(line);
+        var result = _docxFileReader.GetNextLine();
+        while (result.Success)
+        {
+            _stringBuilder.AppendLine(result.Value!);
+            result = _docxFileReader.GetNextLine();
+        }
         
         return Verifier.Verify(_stringBuilder.ToString());
     }

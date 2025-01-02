@@ -1,3 +1,5 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.FileReader;
 
 public class TxtFileReader : IFileReader
@@ -20,31 +22,45 @@ public class TxtFileReader : IFileReader
         }
     }
 
-    public void OpenFile(string filePath)
+    public Result<Nothing> OpenFile(string filePath)
     {
         if (_streamReader != null)
-            throw new InvalidOperationException("File is already open");
-        ArgumentNullException.ThrowIfNull(filePath);
-        
+            return Result.Failure("File is already open");
+
         if (!Path.IsPathFullyQualified(filePath))
-            throw new ArgumentException("path must be absolute");
+            return Result.Failure("path must be absolute");
         if (!Path.HasExtension(filePath) || !Path.GetExtension(filePath).Equals(FileExtension))
-            throw new ArgumentException($"given path does not refer to a {FileExtension} file");
-        if (!Path.Exists(filePath))
-            throw new FileNotFoundException("file not found");
+            return Result.Failure($"given path does not refer to a {FileExtension} file");
+
+        try
+        {
+            _streamReader = new StreamReader(filePath);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure(ex.Message);
+        }
         
-        _streamReader = new StreamReader(filePath);
+        return Result.Success();
     }
 
-    public bool TryGetNextLine(out string line)
+    public Result<string> GetNextLine()
     {
-        line = String.Empty;
         if (_streamReader == null)
-            throw new InvalidOperationException("File is not open");
+            return Result.FromError<string>("File is not open");
         if (_streamReader.EndOfStream)
-            return false;
-        
-        line = _streamReader.ReadLine()!;
-        return true;
+            return Result.FromError<string>("End of file reached");
+
+        string? line;
+        try
+        {
+            line = _streamReader.ReadLine();
+        }
+        catch (Exception ex)
+        {
+            return Result.FromError<string>(ex.Message);
+        }
+
+        return line != null ? Result.FromValue(line) : Result.FromError<string>("Could not read from a file");
     }
 }

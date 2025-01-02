@@ -1,5 +1,6 @@
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.FileReader;
 
@@ -27,37 +28,42 @@ public class DocxFileReader : IFileReader
         }
     }
 
-    public void OpenFile(string filePath)
+    public Result<Nothing> OpenFile(string filePath)
     {
         if (_document != null)
-            throw new InvalidOperationException("File is already open");
-        ArgumentNullException.ThrowIfNull(filePath);
-        
+            return Result.Failure("File is already open");
+
         if (!Path.IsPathFullyQualified(filePath))
-            throw new ArgumentException("path must be absolute");
+            return Result.Failure("path must be absolute");
         if (!Path.HasExtension(filePath) || !Path.GetExtension(filePath).Equals(FileExtension))
-            throw new ArgumentException($"given path does not refer to a {FileExtension} file");
-        if (!Path.Exists(filePath))
-            throw new FileNotFoundException($"file not found {filePath}");
+            return Result.Failure($"given path does not refer to a {FileExtension} file");
+
+        try
+        {
+            _document = WordprocessingDocument.Open(filePath, false);
+        }
+        catch (Exception ex)
+        {
+            return Result.Failure(ex.Message);
+        }
         
-        _document = WordprocessingDocument.Open(filePath, false);
+        return Result.Success();
     }
 
-    public bool TryGetNextLine(out string line)
+    public Result<string> GetNextLine()
     {
-        line = String.Empty;
         if (_document == null)
-            throw new InvalidOperationException("File is not open");
+            return Result.FromError<string>("File is not open");
         _elementList ??= _document.MainDocumentPart?.Document.Body?.ChildElements;
         if (_elementList == null)
-            return false;
+            return Result.FromError<string>("Document is empty");
         if (_elementIndex < _elementList.Value.Count)
         {
-            line = _elementList.Value[_elementIndex].InnerText;
+            var line = _elementList.Value[_elementIndex].InnerText;
             _elementIndex++;
-            return true;
+            return Result.FromValue(line);
         }
 
-        return false;
+        return Result.FromError<string>("Reached end of file");
     }
 }

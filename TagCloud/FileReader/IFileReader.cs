@@ -1,8 +1,10 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.FileReader;
 
 public interface IFileReader : IDisposable
 {
-    public void OpenFile(string filePath);
-    public bool TryGetNextLine(out string line);
+    public Result<Nothing> OpenFile(string filePath);
+    public Result<string> GetNextLine();
     public string FileExtension { get; }
 }
