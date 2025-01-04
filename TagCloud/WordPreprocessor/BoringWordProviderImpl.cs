@@ -21,10 +21,13 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogg
         }
         
         var extension = Path.GetExtension(filePath);
-        if (fileReaderRegistry.TryGetFileReader(extension, out var fileReader))
+        var fileReaderResult = fileReaderRegistry.GetFileReader(extension);
+        if (fileReaderResult.Success)
         {
             logger.Info("Loading boring words file.");
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath)); 
+            
+            var fileReader = fileReaderResult.Value!;
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath));
             if (!openFileResult.Success)
             {
                 logger.Error($"Failed to open file: {openFileResult.Error}");
@@ -42,7 +45,7 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogg
         }
         else
         {
-            logger.Error($"Unsupported file format \"{extension}\"");
+            logger.Error(fileReaderResult.Error!);
         }
     }
 }

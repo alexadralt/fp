@@ -35,10 +35,13 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         }
         
         var extension = Path.GetExtension(path);
-        if (_fileReaderRegistry.TryGetFileReader(extension, out var fileReader))
+        var fileReaderResult = _fileReaderRegistry.GetFileReader(extension);
+        if (fileReaderResult.Success)
         {
+            var fileReader = fileReaderResult.Value!;
+            
             _logger.Info("Loading delimiters file.");
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(path)); 
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(path));
             if (!openFileResult.Success)
             {
                 _logger.Error($"Failed to open file: {openFileResult.Error}");
@@ -56,7 +59,7 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         }
         else
         {
-            _logger.Error($"Unsupported file format \"{extension}\"");
+            _logger.Error(fileReaderResult.Error!);
         }
     }
 }

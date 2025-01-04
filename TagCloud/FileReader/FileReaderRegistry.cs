@@ -1,3 +1,5 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.FileReader;
 
 public class FileReaderRegistry
@@ -11,15 +13,20 @@ public class FileReaderRegistry
             _fileReaders.TryAdd(reader.FileExtension, reader);
     }
     
-    public bool TryGetFileReader(string fileExtension, out IFileReader fileReader)
+    public Result<IFileReader> GetFileReader(string fileExtension)
     {
-        return _fileReaders.Remove(fileExtension, out fileReader);
+        if (_fileReaders.Remove(fileExtension, out var fileReader))
+            return Result.FromValue(fileReader);
+
+        return Result.FromError<IFileReader>($"Extension \"{fileExtension}\" is not supported, " +
+                                             $"Supported extensions are: " +
+                                             $"{string.Join(", ", GetSupportedFileExtensions())}");
     }
 
     public void ReturnFileReader(IFileReader fileReader)
     {
         fileReader.Dispose();
-        _fileReaders.Add(fileReader.FileExtension, fileReader);
+        _fileReaders.TryAdd(fileReader.FileExtension, fileReader);
     }
 
     public bool IsSupportedFileExtension(string fileExtension)

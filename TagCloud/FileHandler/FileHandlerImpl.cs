@@ -15,9 +15,11 @@ public class FileHandlerImpl(
     public IEnumerable<string> ReadAllLines(string filePath)
     {
         var extension = Path.GetExtension(filePath);
-        if (readerRegistry.TryGetFileReader(extension, out var fileReader))
+        var fileReaderResult = readerRegistry.GetFileReader(extension);
+        if (fileReaderResult.Success)
         {
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath)); 
+            var fileReader = fileReaderResult.Value!;
+            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath));
             if (!openFileResult.Success)
             {
                 logger.Error($"Failed to open file: {openFileResult.Error}");
@@ -35,7 +37,8 @@ public class FileHandlerImpl(
         }
         else
         {
-            throw new ArgumentException($"Unsupported input file format: {extension}");
+            throw new ArgumentException($"Could not open input file:\n" +
+                                        $"{fileReaderResult.Error}");
         }
     }
 
