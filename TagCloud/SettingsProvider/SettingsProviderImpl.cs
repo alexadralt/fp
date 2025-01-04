@@ -2,6 +2,7 @@ using System.Drawing;
 using System.Text.Json;
 using TagCloud.json;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.SettingsProvider;
 
@@ -27,71 +28,97 @@ public class SettingsProviderImpl(ILogger logger) : ISettingsProvider
         if (_settings != null)
             return _settings;
 
-        try
-        {
-            LoadSettings();
-        }
-        catch (Exception e)
+        var settingsResult = LoadSettings();
+        if (settingsResult.Success)
+            _settings = settingsResult.Value!;
+        else
         {
             _settings = Settings.DefaultSettings;
             
-            logger.Warning($"Failed to load settings file: {e.Message}");
+            logger.Warning($"Failed to load settings file: {settingsResult.Error}");
             logger.Warning("Using default settings.");
             
             if (!Path.Exists(_settingsFile))
             {
-                SaveSettings();
-                logger.Warning($"Created settings.json file at {Path.GetFullPath(_settingsFile)}");
+                var saveSettingsResult = SaveSettings();
+                if (saveSettingsResult.Success)
+                    logger.Info($"Created settings.json file at {Path.GetFullPath(_settingsFile)}");
+                else
+                    logger.Error($"Could not create settings.json file at {Path.GetFullPath(_settingsFile)}, " +
+                                 $"because: {saveSettingsResult.Error}");
             }
         }
         
         return _settings;
     }
 
-    public void UpdateSettings(Settings settings)
+    public Result<Nothing> UpdateSettings(Settings settings)
     {
-        ArgumentNullException.ThrowIfNull(settings);
+        if (_settings == null)
+            return Result.Failure("Settings object is null");
         if (settings != _settings)
         {
             _settings = settings;
-            SaveSettings();
+            return SaveSettings();
         }
+        
+        return Result.Success();
     }
 
-    private void LoadSettings()
+    private Result<Settings> LoadSettings()
     {
-        var json = File.ReadAllText(_settingsFile);
-        _settings = JsonSerializer.Deserialize<Settings>(json, _options);
+        Settings? settings;
+        try
+        {
+            var json = File.ReadAllText(_settingsFile);
+            settings = JsonSerializer.Deserialize<Settings>(json, _options);
+        }
+        catch (Exception e)
+        {
+            return Result.FromError<Settings>(e.Message);
+        }
         
-        if (_settings == null)
-            throw new JsonException("Could not parse settings file.");
-        if (!_settings.TextColor.IsKnownColor)
-            throw new JsonException("Unknown TextColor value");
-        if (!_settings.BackgroundColor.IsKnownColor)
-            throw new JsonException("Unknown BackgroundColor value");
-        if (_settings.Font == null)
+        if (settings == null)
+            return Result.FromError<Settings>("Could not parse settings file.");
+        if (!settings.TextColor.IsKnownColor)
+            return Result.FromError<Settings>("Unknown TextColor value");
+        if (!settings.BackgroundColor.IsKnownColor)
+            return Result.FromError<Settings>("Unknown BackgroundColor value");
+        if (settings.Font == null)
         {
             var names = FontFamily.Families.Select(family => family.Name).ToArray();
-            throw new JsonException($"Unknown Font value. Available options are:\n {string.Join(", ", names)}");
+            return Result.FromError<Settings>(
+                $"Unknown Font value. Available options are:\n{string.Join(", ", names)}");
         }
-        if (_settings.MinFontSize <= 0)
-            throw new JsonException("MinFontSize must be greater than zero");
-        if (_settings.MaxFontSize <= 0)
-            throw new JsonException("MaxFontSize must be greater than zero");
-        if (_settings.ImageSize == Size.Empty)
-            throw new JsonException("ImageSize contains incorrect values");
-        if (_settings.CloudCenter == Point.Empty)
-            throw new JsonException("CloudCenter contains incorrect values");
-        if (_settings.AngleStep <= 0)
-            throw new JsonException("AngleStep must be greater than zero");
-        if (_settings.TracingStep <= 0)
-            throw new JsonException("TracingStep must be greater than zero");
+        if (settings.MinFontSize <= 0)
+            return Result.FromError<Settings>("MinFontSize must be greater than zero");
+        if (settings.MaxFontSize <= 0)
+            return Result.FromError<Settings>("MaxFontSize must be greater than zero");
+        if (settings.ImageSize == Size.Empty)
+            return Result.FromError<Settings>("ImageSize contains incorrect values");
+        if (settings.CloudCenter == Point.Empty)
+            return Result.FromError<Settings>("CloudCenter contains incorrect values");
+        if (settings.AngleStep <= 0)
+            return Result.FromError<Settings>("AngleStep must be greater than zero");
+        if (settings.TracingStep <= 0)
+            return Result.FromError<Settings>("TracingStep must be greater than zero");
+
+        return Result.FromValue(settings);
     }
 
-    private void SaveSettings()
+    private Result<Nothing> SaveSettings()
     {
-        var json = JsonSerializer.Serialize(_settings, _options);
-        using var writer = new StreamWriter(_settingsFile);
-        writer.Write(json);
+        try
+        {
+            var json = JsonSerializer.Serialize(_settings, _options);
+            using var writer = new StreamWriter(_settingsFile);
+            writer.Write(json);
+        }
+        catch (Exception e)
+        {
+            return Result.Failure(e.Message);
+        }
+        
+        return Result.Success();
     }
 }

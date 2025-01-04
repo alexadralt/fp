@@ -1,7 +1,9 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.SettingsProvider;
 
 public interface ISettingsProvider
 {
     public Settings GetSettings();
-    public void UpdateSettings(Settings settings);
+    public Result<Nothing> UpdateSettings(Settings settings);
 }
