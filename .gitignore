@@ -8,6 +8,7 @@ nupkg/
 *.json
 *.txt
 *.png
+*.jpeg
 *.docx
 
 # Integration Testing
