@@ -1,18 +1,17 @@
 using TagCloud.FileReader;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.WordPreprocessor;
 
 public class WordDelimiterProviderImpl : IWordDelimiterProvider
 {
     private readonly HashSet<string> _delimiters;
-    private readonly ILogger _logger;
     private readonly FileReaderRegistry _fileReaderRegistry;
 
-    public WordDelimiterProviderImpl(FileReaderRegistry fileReaderRegistry, ILogger logger)
+    public WordDelimiterProviderImpl(FileReaderRegistry fileReaderRegistry)
     {
         _fileReaderRegistry = fileReaderRegistry;
-        _logger = logger;
         _delimiters = new HashSet<string>();
         foreach (var del in new []{ "\n", "\t", "\r", " " })
         {
@@ -25,14 +24,10 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         return _delimiters.ToArray();
     }
 
-    public void LoadDelimitersFile(string path)
+    public Result<Nothing> LoadDelimitersFile(string path)
     {
         if (!Path.Exists(path))
-        {
-            _logger.Warning($"Could not find delimiters file at: {Path.GetFullPath(path)}");
-            _logger.Warning("Using only default word delimiters.");
-            return;
-        }
+            return Result.Failure($"Could not find delimiters file at: {Path.GetFullPath(path)}");
         
         var extension = Path.GetExtension(path);
         var fileReaderResult = _fileReaderRegistry.GetFileReader(extension);
@@ -40,13 +35,9 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         {
             var fileReader = fileReaderResult.Value!;
             
-            _logger.Info("Loading delimiters file.");
             var openFileResult = fileReader.OpenFile(Path.GetFullPath(path));
             if (!openFileResult.Success)
-            {
-                _logger.Error($"Failed to open file: {openFileResult.Error}");
-                return;
-            }
+                return Result.Failure($"Failed to open file: {openFileResult.Error}");
             
             var result = fileReader.GetNextLine();
             while (result.Success)
@@ -59,7 +50,9 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         }
         else
         {
-            _logger.Error(fileReaderResult.Error!);
+            return Result.Failure(fileReaderResult.Error!);
         }
+
+        return Result.Success();
     }
 }

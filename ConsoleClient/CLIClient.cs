@@ -11,7 +11,17 @@ public class CLIClient(
     public void RunOptions(Options options)
     {
         if (options.WordDelimiterFile != null)
-            wordCloudImageGenerator.LoadWordDelimitersFile(options.WordDelimiterFile);
+        {
+            logger.Info($"Loading word delimiters from {Path.GetFullPath(options.WordDelimiterFile)}");
+            var loadResult = wordCloudImageGenerator.LoadWordDelimitersFile(options.WordDelimiterFile);
+            if (loadResult.Success)
+                logger.Info("Word delimiters file was loaded.");
+            else
+            {
+                logger.Warning(loadResult.Error!);
+                logger.Info("Using default word delimiters.");
+            }
+        }
 
         if (options.BoringWordsFile != null)
             wordCloudImageGenerator.LoadBoringWordsFile(options.BoringWordsFile);

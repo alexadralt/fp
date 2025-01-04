@@ -18,7 +18,7 @@ public class FileReaderRegistry
         if (_fileReaders.Remove(fileExtension, out var fileReader))
             return Result.FromValue(fileReader);
 
-        return Result.FromError<IFileReader>($"Extension \"{fileExtension}\" is not supported, " +
+        return Result.FromError<IFileReader>($"Extension \"{fileExtension}\" is not supported.\n" +
                                              $"Supported extensions are: " +
                                              $"{string.Join(", ", GetSupportedFileExtensions())}");
     }

@@ -1,3 +1,5 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.WordPreprocessor;
 
 public class TagPreprocessor(
@@ -18,9 +20,9 @@ public class TagPreprocessor(
             .Where(IsGoodWord);
     }
 
-    public void LoadWordDelimitersFile(string filePath)
+    public Result<Nothing> LoadWordDelimitersFile(string filePath)
     {
-        wordDelimiterProvider.LoadDelimitersFile(filePath);
+        return wordDelimiterProvider.LoadDelimitersFile(filePath);
     }
 
     public void LoadBoringWordsFile(string filePath)

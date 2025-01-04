@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Drawing;
 using TagCloud.FileHandler;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 using TagCloud.WordPreprocessor;
 using TagCloud.WordRenderer;
 
@@ -78,9 +79,9 @@ public class WordCloudImageGeneratorImpl(
         return Path.Exists(filePath);
     }
 
-    public void LoadWordDelimitersFile(string filePath)
+    public Result<Nothing> LoadWordDelimitersFile(string filePath)
     {
-        wordPreprocessor.LoadWordDelimitersFile(filePath);
+        return wordPreprocessor.LoadWordDelimitersFile(filePath);
     }
 
     public void LoadBoringWordsFile(string filePath)

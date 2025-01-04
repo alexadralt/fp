@@ -59,7 +59,7 @@ public class TagCloudIntegrationTests
         
 
         var fileReaderRegistry = new FileReaderRegistry([new TxtFileReader()]);
-        var wordDelimiterProvider = new WordDelimiterProviderImpl(fileReaderRegistry, _logger);
+        var wordDelimiterProvider = new WordDelimiterProviderImpl(fileReaderRegistry);
         var boringWordProvider = new BoringWordProviderImpl(fileReaderRegistry, _logger);
         var tagPreprocessor = new TagPreprocessor(boringWordProvider, wordDelimiterProvider);
         var cloudLayouter = new CircularCloudLayouterImpl(_settingsProvider);
