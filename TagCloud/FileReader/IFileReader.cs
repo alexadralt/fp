@@ -1,10 +1,10 @@
+using System.Collections;
 using TagCloud.ResultUtils;
 
 namespace TagCloud.FileReader;
 
-public interface IFileReader : IDisposable
+public interface IFileReader
 {
-    public Result<Nothing> OpenFile(string filePath);
-    public Result<string> GetNextLine();
+    public IEnumerable<Result<string>> ReadAllLines(string filePath);
     public string FileExtension { get; }
 }

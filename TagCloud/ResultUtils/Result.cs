@@ -1,3 +1,5 @@
+using System.Collections;
+
 namespace TagCloud.ResultUtils;
 
 public static class Result
@@ -6,6 +8,7 @@ public static class Result
     public static Result<Nothing> Success() => new Result<Nothing>(default);
     public static Result<T> FromError<T>(string error) => new Result<T>(default, error);
     public static Result<Nothing> Failure(string error) => new Result<Nothing>(default, error);
+    public static IEnumerable<Result<T>> FromErrorEnumerable<T>(string error) => new[] { FromError<T>(error) };
 }
 
 public record Result<T>(T? Value, string? Error = null)

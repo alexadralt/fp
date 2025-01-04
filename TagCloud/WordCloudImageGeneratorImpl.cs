@@ -9,7 +9,6 @@ using TagCloud.WordRenderer;
 namespace TagCloud;
 
 public class WordCloudImageGeneratorImpl(
-    ILogger logger,
     IFileHandler fileHandler,
     IWordPreprocessor wordPreprocessor,
     IWordRenderer wordRenderer
@@ -17,12 +16,20 @@ public class WordCloudImageGeneratorImpl(
 {
     private Bitmap? _bitmap;
     
-    public bool TryGenerateImageFromFile(string filePath)
+    public Result<Nothing> GenerateImageFromFile(string filePath)
     {
         foreach (var line in fileHandler.ReadAllLines(filePath))
         {
-            var words = wordPreprocessor.ExtractWords(line);
-            wordRenderer.WordStatistics.Populate(words);
+            if (line.Success)
+            {
+                var words = wordPreprocessor.ExtractWords(line.Value!);
+                wordRenderer.WordStatistics.Populate(words);
+            }
+            else
+            {
+                return Result.Failure($"Couldn't read input file:\n" +
+                                      $"{line.Error!}");
+            }
         }
 
         try
@@ -31,10 +38,10 @@ public class WordCloudImageGeneratorImpl(
         }
         catch (Exception ex)
         {
-            logger.Error(ex.Message);
-            return false;
+            return Result.Failure(ex.Message);
         }
-        return true;
+        
+        return Result.Success();
     }
 
     public void SaveImageToFile(string filePath)
@@ -43,11 +50,6 @@ public class WordCloudImageGeneratorImpl(
             throw new InvalidOperationException("Image was not generated yet.");
         
         fileHandler.SaveImage(_bitmap, filePath);
-    }
-
-    public bool IsValidInputFile(string filePath, out string? errorMessage)
-    {
-        return fileHandler.IsValidInputFile(filePath, out errorMessage);
     }
 
     public bool IsSupportedOutputFileExtension(string? filePath, out string? errorMessage)

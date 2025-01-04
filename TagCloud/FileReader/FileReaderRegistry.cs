@@ -15,7 +15,7 @@ public class FileReaderRegistry
     
     public Result<IFileReader> GetFileReader(string fileExtension)
     {
-        if (_fileReaders.Remove(fileExtension, out var fileReader))
+        if (_fileReaders.TryGetValue(fileExtension, out var fileReader))
             return Result.FromValue(fileReader);
 
         return Result.FromError<IFileReader>($"Extension \"{fileExtension}\" is not supported.\n" +
@@ -23,18 +23,7 @@ public class FileReaderRegistry
                                              $"{string.Join(", ", GetSupportedFileExtensions())}");
     }
 
-    public void ReturnFileReader(IFileReader fileReader)
-    {
-        fileReader.Dispose();
-        _fileReaders.TryAdd(fileReader.FileExtension, fileReader);
-    }
-
-    public bool IsSupportedFileExtension(string fileExtension)
-    {
-        return _fileReaders.ContainsKey(fileExtension);
-    }
-
-    public IEnumerable<string> GetSupportedFileExtensions()
+    private IEnumerable<string> GetSupportedFileExtensions()
     {
         return _fileReaders.Keys;
     }

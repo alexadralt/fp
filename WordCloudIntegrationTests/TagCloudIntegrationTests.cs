@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using FakeItEasy;
@@ -11,6 +12,7 @@ using TagCloud;
 using TagCloud.FileHandler;
 using TagCloud.FileReader;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 using TagCloud.SettingsProvider;
 using TagCloud.TagsCloudVisualization;
 using TagCloud.WordCloudLayouter;
@@ -53,7 +55,7 @@ public class TagCloudIntegrationTests
         _defaultInputFile = "./../../../HarryPotterText_mod.txt";
         var lines = File.ReadAllLines(_defaultInputFile);
         A.CallTo(() => _fileHandler.ReadAllLines(_defaultInputFile))
-            .Returns(lines);
+            .Returns(lines.Select(Result.FromValue));
         _defaultDelimitersFile = "./../../../delimiters.txt";
         _defaultBoringWordsFile = "./../../../boring.txt";
         
@@ -68,7 +70,7 @@ public class TagCloudIntegrationTests
         var wordRenderer = new TagCloudWordRenderer(wordCloudLayouter, _settingsProvider);
         
         _imageGenerator = new WordCloudImageGeneratorImpl(
-            _logger, _fileHandler, tagPreprocessor, wordRenderer);
+            _fileHandler, tagPreprocessor, wordRenderer);
     }
 
     [Test]
@@ -80,11 +82,11 @@ public class TagCloudIntegrationTests
         A.CallTo(() => _settingsProvider.GetSettings())
             .Returns(Settings.TestSettings with { MaxFontSize = 20 });
         A.CallTo(() => _fileHandler.ReadAllLines(A<string>.Ignored))
-            .Returns(words.Split(' '));
+            .Returns(words.Split(' ').Select(Result.FromValue));
 
         var outputFile = "GeneratesImageAndReturnsTrue.png";
         
-        _imageGenerator.TryGenerateImageFromFile(String.Empty);
+        _imageGenerator.GenerateImageFromFile(String.Empty);
         _imageGenerator.SaveImageToFile(outputFile);
         return Verifier.VerifyFile(outputFile);
     }
@@ -94,7 +96,7 @@ public class TagCloudIntegrationTests
     {
         var outputFile = "HarryPotter.png";
         
-        _imageGenerator.TryGenerateImageFromFile(_defaultInputFile);
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
         _imageGenerator.SaveImageToFile(outputFile);
 
         return Verifier.VerifyFile(outputFile);
@@ -106,7 +108,7 @@ public class TagCloudIntegrationTests
         var outputFile = "HarryPotter_WithDelimiters.png";
         _imageGenerator.LoadWordDelimitersFile(_defaultDelimitersFile);
         
-        _imageGenerator.TryGenerateImageFromFile(_defaultInputFile);
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
         _imageGenerator.SaveImageToFile(outputFile);
         
         return Verifier.VerifyFile(outputFile);
@@ -119,7 +121,7 @@ public class TagCloudIntegrationTests
         _imageGenerator.LoadWordDelimitersFile(_defaultDelimitersFile);
         _imageGenerator.LoadBoringWordsFile(_defaultBoringWordsFile);
         
-        _imageGenerator.TryGenerateImageFromFile(_defaultInputFile);
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
         _imageGenerator.SaveImageToFile(outputFile);
         
         return Verifier.VerifyFile(outputFile);

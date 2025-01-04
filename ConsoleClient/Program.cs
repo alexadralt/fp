@@ -5,7 +5,6 @@ using TagCloud;
 using TagCloud.FileHandler;
 using TagCloud.FileReader;
 using TagCloud.ImageFileWriter;
-using TagCloud.Logger;
 using TagCloud.SettingsProvider;
 using TagCloud.TagsCloudVisualization;
 using TagCloud.WordCloudLayouter;

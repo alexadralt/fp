@@ -18,8 +18,8 @@ public class CLIClient(
                 logger.Info("Word delimiters file was loaded.");
             else
             {
-                logger.Warning(loadResult.Error!);
-                logger.Info("Using default word delimiters.");
+                logger.Error($"Couldn't load delimiters file: {loadResult.Error!}");
+                return;
             }
         }
 
@@ -30,16 +30,13 @@ public class CLIClient(
             if (loadResult.Success)
                 logger.Info("Boring words file was loaded.");
             else
-                logger.Warning(loadResult.Error!);
+            {
+                logger.Error($"Couldn't load boring words file: {loadResult.Error!}");
+                return;
+            }
         }
 
         if (!wordCloudImageGenerator.IsSupportedOutputFileExtension(options.OutputFile, out var errorMessage))
-        {
-            logger.Error(errorMessage!);
-            return;
-        }
-
-        if (!wordCloudImageGenerator.IsValidInputFile(options.InputFile, out errorMessage))
         {
             logger.Error(errorMessage!);
             return;
@@ -49,9 +46,12 @@ public class CLIClient(
             && wordCloudImageGenerator.DoesOutputFileExist(options.OutputFile)
             && !AskForOverwrite(options.OutputFile))
             return;
-        
-        if (wordCloudImageGenerator.TryGenerateImageFromFile(options.InputFile))
+
+        var generationResult = wordCloudImageGenerator.GenerateImageFromFile(options.InputFile);
+        if (generationResult.Success)
             wordCloudImageGenerator.SaveImageToFile(options.OutputFile);
+        else
+            logger.Error(generationResult.Error!);
     }
 
     private bool AskForOverwrite(string outputFile)

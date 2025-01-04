@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Drawing;
 using TagCloud.FileReader;
 using TagCloud.ImageFileWriter;
@@ -12,34 +13,36 @@ public class FileHandlerImpl(
     ILogger logger
     ) : IFileHandler
 {
-    public IEnumerable<string> ReadAllLines(string filePath)
+    public IEnumerable<Result<string>> ReadAllLines(string filePath)
     {
+        var check = CheckInputFile(filePath);
+        if (!check.Success)
+            return Result.FromErrorEnumerable<string>(check.Error!);
+        
         var extension = Path.GetExtension(filePath);
         var fileReaderResult = readerRegistry.GetFileReader(extension);
         if (fileReaderResult.Success)
         {
             var fileReader = fileReaderResult.Value!;
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath));
-            if (!openFileResult.Success)
-            {
-                logger.Error($"Failed to open file: {openFileResult.Error}");
-                yield break;
-            }
-            
-            Result<string> result = fileReader.GetNextLine();
-            while(result.Success)
-            {
-                yield return result.Value!;
-                result = fileReader.GetNextLine();
-            }
-            
-            readerRegistry.ReturnFileReader(fileReader);
+            return fileReader.ReadAllLines(Path.GetFullPath(filePath));
         }
-        else
+
+        return Result.FromErrorEnumerable<string>(fileReaderResult.Error!);
+    }
+
+    private Result<Nothing> CheckInputFile(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
         {
-            throw new ArgumentException($"Could not open input file:\n" +
-                                        $"{fileReaderResult.Error}");
+            return Result.Failure("Input file was not specified.");
         }
+        
+        if (string.IsNullOrEmpty(Path.GetExtension(filePath)))
+        {
+            return Result.Failure($"Missing input file extension: {filePath} <---");
+        }
+        
+        return Result.Success();
     }
 
     public void SaveImage(Bitmap image, string filePath)
@@ -54,39 +57,6 @@ public class FileHandlerImpl(
         }
         
         logger.Info($"Output file is saved to {Path.GetFullPath(filePath)}");
-    }
-
-    public bool IsValidInputFile(string filePath, out string? errorMessage)
-    {
-        if (string.IsNullOrEmpty(filePath) || string.IsNullOrWhiteSpace(filePath))
-        {
-            errorMessage = "Input file was not specified.";
-            return false;
-        }
-        
-        var extension = Path.GetExtension(filePath);
-        if (string.IsNullOrEmpty(extension))
-        {
-            errorMessage = $"Missing input file extension: {filePath} <---";
-            return false;
-        }
-        
-        if (!readerRegistry.IsSupportedFileExtension(extension))
-        {
-            errorMessage = $"Unsupported input file extension: {extension}\n" +
-                           $"Supported extensions are: {string.Join(", ",
-                               readerRegistry.GetSupportedFileExtensions())}";
-            return false;
-        }
-        
-        if (!Path.Exists(filePath))
-        {
-            errorMessage = $"Could not find input file: {Path.GetFullPath(filePath)}";
-            return false;
-        }
-        
-        errorMessage = null;
-        return true;
     }
 
     public bool IsSupportedOutputFileExtension(string extension)

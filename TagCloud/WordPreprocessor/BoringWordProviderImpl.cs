@@ -14,28 +14,18 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry) : IBo
 
     public Result<Nothing> LoadBoringWordsFile(string filePath)
     {
-        if (!Path.Exists(filePath))
-        {
-            return Result.Failure($"Could not find boring words file at: {Path.GetFullPath(filePath)}");
-        }
-        
         var extension = Path.GetExtension(filePath);
         var fileReaderResult = fileReaderRegistry.GetFileReader(extension);
         if (fileReaderResult.Success)
         {
             var fileReader = fileReaderResult.Value!;
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath));
-            if (!openFileResult.Success)
-                return Result.Failure($"Failed to open file: {openFileResult.Error}");
-            
-            var result = fileReader.GetNextLine();
-            while (result.Success)
+            foreach (var line in fileReader.ReadAllLines(Path.GetFullPath(filePath)))
             {
-                _boringWords.Add(result.Value!);
-                result = fileReader.GetNextLine();
+                if (line.Success)
+                    _boringWords.Add(line.Value!);
+                else
+                    return Result.Failure(line.Error!);
             }
-            
-            fileReaderRegistry.ReturnFileReader(fileReader);
         }
         else
         {

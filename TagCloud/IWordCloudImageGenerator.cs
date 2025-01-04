@@ -4,9 +4,8 @@ namespace TagCloud;
 
 public interface IWordCloudImageGenerator
 {
-    public bool TryGenerateImageFromFile(string filePath);
+    public Result<Nothing> GenerateImageFromFile(string filePath);
     public void SaveImageToFile(string filePath);
-    public bool IsValidInputFile(string filePath, out string? errorMessage);
     public bool IsSupportedOutputFileExtension(string? filePath, out string? errorMessage);
     public bool DoesOutputFileExist(string filePath);
     public Result<Nothing> LoadWordDelimitersFile(string filePath);

@@ -1,5 +1,4 @@
 using TagCloud.FileReader;
-using TagCloud.Logger;
 using TagCloud.ResultUtils;
 
 namespace TagCloud.WordPreprocessor;
@@ -26,27 +25,18 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
 
     public Result<Nothing> LoadDelimitersFile(string path)
     {
-        if (!Path.Exists(path))
-            return Result.Failure($"Could not find delimiters file at: {Path.GetFullPath(path)}");
-        
         var extension = Path.GetExtension(path);
         var fileReaderResult = _fileReaderRegistry.GetFileReader(extension);
         if (fileReaderResult.Success)
         {
             var fileReader = fileReaderResult.Value!;
-            
-            var openFileResult = fileReader.OpenFile(Path.GetFullPath(path));
-            if (!openFileResult.Success)
-                return Result.Failure($"Failed to open file: {openFileResult.Error}");
-            
-            var result = fileReader.GetNextLine();
-            while (result.Success)
+            foreach (var line in fileReader.ReadAllLines(Path.GetFullPath(path)))
             {
-                _delimiters.Add(result.Value!);
-                result = fileReader.GetNextLine();
+                if (line.Success)
+                    _delimiters.Add(line.Value!);
+                else
+                    return Result.Failure(line.Error!);
             }
-            
-            _fileReaderRegistry.ReturnFileReader(fileReader);
         }
         else
         {
