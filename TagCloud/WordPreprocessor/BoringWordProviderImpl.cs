@@ -1,9 +1,9 @@
 using TagCloud.FileReader;
-using TagCloud.Logger;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.WordPreprocessor;
 
-public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogger logger) : IBoringWordProvider
+public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry) : IBoringWordProvider
 {
     private readonly HashSet<string> _boringWords = new();
     
@@ -12,27 +12,21 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogg
         return _boringWords.Contains(word);
     }
 
-    public void LoadBoringWordsFile(string filePath)
+    public Result<Nothing> LoadBoringWordsFile(string filePath)
     {
         if (!Path.Exists(filePath))
         {
-            logger.Warning($"Could not find boring words file at: {Path.GetFullPath(filePath)}");
-            return;
+            return Result.Failure($"Could not find boring words file at: {Path.GetFullPath(filePath)}");
         }
         
         var extension = Path.GetExtension(filePath);
         var fileReaderResult = fileReaderRegistry.GetFileReader(extension);
         if (fileReaderResult.Success)
         {
-            logger.Info("Loading boring words file.");
-            
             var fileReader = fileReaderResult.Value!;
             var openFileResult = fileReader.OpenFile(Path.GetFullPath(filePath));
             if (!openFileResult.Success)
-            {
-                logger.Error($"Failed to open file: {openFileResult.Error}");
-                return;
-            }
+                return Result.Failure($"Failed to open file: {openFileResult.Error}");
             
             var result = fileReader.GetNextLine();
             while (result.Success)
@@ -45,7 +39,9 @@ public class BoringWordProviderImpl(FileReaderRegistry fileReaderRegistry, ILogg
         }
         else
         {
-            logger.Error(fileReaderResult.Error!);
+            return Result.Failure(fileReaderResult.Error!);
         }
+        
+        return Result.Success();
     }
 }

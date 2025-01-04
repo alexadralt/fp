@@ -10,5 +10,5 @@ public interface IWordCloudImageGenerator
     public bool IsSupportedOutputFileExtension(string? filePath, out string? errorMessage);
     public bool DoesOutputFileExist(string filePath);
     public Result<Nothing> LoadWordDelimitersFile(string filePath);
-    public void LoadBoringWordsFile(string filePath);
+    public Result<Nothing> LoadBoringWordsFile(string filePath);
 }

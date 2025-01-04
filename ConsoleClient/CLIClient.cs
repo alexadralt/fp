@@ -24,7 +24,14 @@ public class CLIClient(
         }
 
         if (options.BoringWordsFile != null)
-            wordCloudImageGenerator.LoadBoringWordsFile(options.BoringWordsFile);
+        {
+            logger.Info($"Loading boring words from {Path.GetFullPath(options.BoringWordsFile)}");
+            var loadResult = wordCloudImageGenerator.LoadBoringWordsFile(options.BoringWordsFile);
+            if (loadResult.Success)
+                logger.Info("Boring words file was loaded.");
+            else
+                logger.Warning(loadResult.Error!);
+        }
 
         if (!wordCloudImageGenerator.IsSupportedOutputFileExtension(options.OutputFile, out var errorMessage))
         {

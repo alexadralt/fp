@@ -25,9 +25,9 @@ public class TagPreprocessor(
         return wordDelimiterProvider.LoadDelimitersFile(filePath);
     }
 
-    public void LoadBoringWordsFile(string filePath)
+    public Result<Nothing> LoadBoringWordsFile(string filePath)
     {
-        boringWordProvider.LoadBoringWordsFile(filePath);
+        return boringWordProvider.LoadBoringWordsFile(filePath);
     }
 
     private string ProcessWord(string word)

@@ -84,8 +84,8 @@ public class WordCloudImageGeneratorImpl(
         return wordPreprocessor.LoadWordDelimitersFile(filePath);
     }
 
-    public void LoadBoringWordsFile(string filePath)
+    public Result<Nothing> LoadBoringWordsFile(string filePath)
     {
-        wordPreprocessor.LoadBoringWordsFile(filePath);
+        return wordPreprocessor.LoadBoringWordsFile(filePath);
     }
 }
