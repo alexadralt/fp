@@ -3,11 +3,8 @@ using System.Drawing.Imaging;
 
 namespace TagCloud.ImageFileWriter;
 
-public class IconImageFileWriter : IImageFileWriter
+public class IconImageFileWriter : BitmapImageFileWriter
 {
-    public string Extension => ".ico";
-    public void SaveImage(Bitmap image, string filePath)
-    {
-        image.Save(filePath, ImageFormat.Icon);
-    }
+    public override string Extension => ".ico";
+    protected override ImageFormat Format => ImageFormat.Icon;
 }

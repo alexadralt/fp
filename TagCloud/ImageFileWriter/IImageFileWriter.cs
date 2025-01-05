@@ -1,9 +1,10 @@
 using System.Drawing;
+using TagCloud.ResultUtils;
 
 namespace TagCloud.ImageFileWriter;
 
 public interface IImageFileWriter
 {
     public string Extension { get; }
-    public void SaveImage(Bitmap image, string filePath);
+    public Result<Nothing> SaveImage(Bitmap image, string filePath);
 }

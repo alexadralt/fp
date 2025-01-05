@@ -1,16 +1,13 @@
-using System.Collections;
 using System.Drawing;
 using TagCloud.FileReader;
 using TagCloud.ImageFileWriter;
-using TagCloud.Logger;
 using TagCloud.ResultUtils;
 
 namespace TagCloud.FileHandler;
 
 public class FileHandlerImpl(
     FileReaderRegistry readerRegistry,
-    ImageFileWriterRegistry writerRegistry,
-    ILogger logger
+    ImageFileWriterRegistry writerRegistry
     ) : IFileHandler
 {
     public IEnumerable<Result<string>> ReadAllLines(string filePath)
@@ -45,18 +42,13 @@ public class FileHandlerImpl(
         return Result.Success();
     }
 
-    public void SaveImage(Bitmap image, string filePath)
+    public Result<Nothing> SaveImage(Bitmap image, string filePath)
     {
-        if (writerRegistry.TryGetImageFileWriter(Path.GetExtension(filePath), out var imageWriter))
-        {
-            imageWriter.SaveImage(image, filePath);
-        }
-        else
-        {
-            throw new ArgumentException($"Unsupported image format: {Path.GetExtension(filePath)}");
-        }
-        
-        logger.Info($"Output file is saved to {Path.GetFullPath(filePath)}");
+        var fileWriterResult = writerRegistry.TryGetImageFileWriter(Path.GetExtension(filePath)); 
+        if (fileWriterResult.Success)
+            return fileWriterResult.Value!.SaveImage(image, filePath);
+
+        return Result.Failure(fileWriterResult.Error!);
     }
 
     public bool IsSupportedOutputFileExtension(string extension)

@@ -1,3 +1,5 @@
+using TagCloud.ResultUtils;
+
 namespace TagCloud.ImageFileWriter;
 
 public class ImageFileWriterRegistry
@@ -11,9 +13,12 @@ public class ImageFileWriterRegistry
             _imageFileWriters.TryAdd(writer.Extension, writer);
     }
 
-    public bool TryGetImageFileWriter(string extension, out IImageFileWriter imageFileWriter)
+    public Result<IImageFileWriter> TryGetImageFileWriter(string extension)
     {
-        return _imageFileWriters.TryGetValue(extension, out imageFileWriter);
+        if (_imageFileWriters.TryGetValue(extension, out var imageFileWriter))
+            return Result.FromValue(imageFileWriter);
+        
+        return Result.FromError<IImageFileWriter>($"Unsupported image file extension: {extension}");
     }
 
     public bool IsSupportedExtension(string extension)

@@ -1,13 +1,9 @@
-using System.Drawing;
 using System.Drawing.Imaging;
 
 namespace TagCloud.ImageFileWriter;
 
-public class BmpImageFileWriter : IImageFileWriter
+public class BmpImageFileWriter : BitmapImageFileWriter
 {
-    public string Extension => ".bmp";
-    public void SaveImage(Bitmap image, string filePath)
-    {
-        image.Save(filePath, ImageFormat.Bmp);
-    }
+    public override string Extension => ".bmp";
+    protected override ImageFormat Format => ImageFormat.Bmp;
 }

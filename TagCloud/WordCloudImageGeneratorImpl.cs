@@ -44,12 +44,12 @@ public class WordCloudImageGeneratorImpl(
         return Result.Success();
     }
 
-    public void SaveImageToFile(string filePath)
+    public Result<Nothing> SaveImageToFile(string filePath)
     {
         if (_bitmap == null)
-            throw new InvalidOperationException("Image was not generated yet.");
+            return Result.Failure("Image was not generated yet.");
         
-        fileHandler.SaveImage(_bitmap, filePath);
+        return fileHandler.SaveImage(_bitmap, filePath);
     }
 
     public bool IsSupportedOutputFileExtension(string? filePath, out string? errorMessage)

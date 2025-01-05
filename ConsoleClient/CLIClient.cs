@@ -49,7 +49,13 @@ public class CLIClient(
 
         var generationResult = wordCloudImageGenerator.GenerateImageFromFile(options.InputFile);
         if (generationResult.Success)
-            wordCloudImageGenerator.SaveImageToFile(options.OutputFile);
+        {
+            var saveResult = wordCloudImageGenerator.SaveImageToFile(options.OutputFile);
+            if (saveResult.Success)
+                logger.Info($"Image saved to: {Path.GetFullPath(options.OutputFile)}");
+            else
+                logger.Error($"Couldn't save image:\n{saveResult.Error!}");
+        }
         else
             logger.Error(generationResult.Error!);
     }
