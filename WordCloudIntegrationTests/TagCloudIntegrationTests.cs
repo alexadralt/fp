@@ -11,6 +11,7 @@ using NUnit.Framework;
 using TagCloud;
 using TagCloud.FileHandler;
 using TagCloud.FileReader;
+using TagCloud.ImageFileWriter;
 using TagCloud.Logger;
 using TagCloud.ResultUtils;
 using TagCloud.SettingsProvider;
@@ -48,19 +49,22 @@ public class TagCloudIntegrationTests
         
         A.CallTo(() => _settingsProvider.GetSettings())
             .Returns(Settings.TestSettings);
+        
+        var fileReaderRegistry = new FileReaderRegistry([new TxtFileReader()]);
+        var fileWriterRegistry = new ImageFileWriterRegistry([new PngImageFileWriter()]);
+        var realFileHandler = new FileHandlerImpl(fileReaderRegistry, fileWriterRegistry);
+        
+        _defaultInputFile = "./../../../HarryPotterText_mod.txt";
+        A.CallTo(() => _fileHandler.ReadAllLines(_defaultInputFile))
+            .Returns(realFileHandler.ReadAllLines(_defaultInputFile));
 #pragma warning disable CA1416
         A.CallTo(() => _fileHandler.SaveImage(A<Bitmap>.Ignored, A<string>.Ignored))
-            .Invokes((Bitmap bitmap, string filePath) => bitmap.Save(filePath, ImageFormat.Png));
+            .Invokes((Bitmap bitmap, string path) => realFileHandler.SaveImage(bitmap, path));
 #pragma warning restore CA1416
-        _defaultInputFile = "./../../../HarryPotterText_mod.txt";
-        var lines = File.ReadAllLines(_defaultInputFile);
-        A.CallTo(() => _fileHandler.ReadAllLines(_defaultInputFile))
-            .Returns(lines.Select(Result.FromValue));
+        
         _defaultDelimitersFile = "./../../../delimiters.txt";
         _defaultBoringWordsFile = "./../../../boring.txt";
-        
 
-        var fileReaderRegistry = new FileReaderRegistry([new TxtFileReader()]);
         var wordDelimiterProvider = new WordDelimiterProviderImpl(fileReaderRegistry);
         var boringWordProvider = new BoringWordProviderImpl(fileReaderRegistry);
         var tagPreprocessor = new TagPreprocessor(boringWordProvider, wordDelimiterProvider);
