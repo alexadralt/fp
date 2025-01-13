@@ -26,6 +26,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordCloudIntegrationTests",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocxFileReader.Tests", "DocxFileReader.Tests\DocxFileReader.Tests.csproj", "{8156499D-99C5-49C6-976F-B782B1256DDB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ResultTests", "ResultTests\ResultTests.csproj", "{E4842D98-6FD4-4F5B-8BEE-CFF7373091D0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -80,6 +82,10 @@ Global
 		{8156499D-99C5-49C6-976F-B782B1256DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8156499D-99C5-49C6-976F-B782B1256DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8156499D-99C5-49C6-976F-B782B1256DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4842D98-6FD4-4F5B-8BEE-CFF7373091D0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4842D98-6FD4-4F5B-8BEE-CFF7373091D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4842D98-6FD4-4F5B-8BEE-CFF7373091D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4842D98-6FD4-4F5B-8BEE-CFF7373091D0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{C33F3A5E-A1ED-4657-9B35-968A4CB23AA1} = {754C1CC8-A8B6-46C6-B35C-8A43B80111A0}
