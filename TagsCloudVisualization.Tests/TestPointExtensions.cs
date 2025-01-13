@@ -1,10 +1,9 @@
 using System.Drawing;
 
-namespace TagCloud.TagsCloudVisualization;
+namespace TagsCloudVisualization.Tests;
 
-public static class PointExtensions
+public static class TestPointExtensions
 {
-    // used only in tests nocheckin
     public static int SquaredDistanceTo(this Point p1, Point p2)
     {
         return (int)(Math.Pow(p1.X - p2.X, 2) + Math.Pow(p1.Y - p2.Y, 2));

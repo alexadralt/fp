@@ -1,10 +1,9 @@
 using System.Drawing;
 
-namespace TagCloud.TagsCloudVisualization;
+namespace TagsCloudVisualization.Tests;
 
-public static class RectangleCollectionExtensions
+public static class TestRectangleCollectionExtensions
 {
-    // used only in tests nocheckin
     public static bool CheckForAllPairs(
         this IEnumerable<Rectangle> rectangles,
         Func<(Rectangle, Rectangle), bool> predicate)

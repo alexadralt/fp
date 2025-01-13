@@ -193,8 +193,8 @@ public class CircularCloudLayouterTests
 
     private IEnumerable<Rectangle> GenerateTestLayout((int, int)[] sizes)
     {
-        return _circularCloudLayouter.GenerateLayout(
-            sizes.Select(size => new Size(size.Item1, size.Item2)).ToArray());
+        return sizes.Select(size => new Size(size.Item1, size.Item2))
+            .Select(size => _circularCloudLayouter.PutNextRectangle(size).Value);
     }
 
     private void Assert_RectanglesDoNotIntersect(IEnumerable<Rectangle> rectangles)

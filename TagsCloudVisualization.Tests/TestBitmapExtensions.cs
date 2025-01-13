@@ -5,6 +5,23 @@ namespace TagsCloudVisualization.Tests;
 
 internal static class TestBitmapExtensions
 {
+#pragma warning disable CA1416
+    private static Bitmap DrawRectangles(this Bitmap bitmap, Rectangle[] rectangles, Pen pen)
+    {
+        var graphics = Graphics.FromImage(bitmap);
+        graphics.DrawRectangles(pen, rectangles);
+        graphics.Dispose();
+        return bitmap;
+    }
+
+    private static Bitmap DrawEllipse(this Bitmap bitmap, Rectangle boundingRect, Pen pen)
+    {
+        var graphics = Graphics.FromImage(bitmap);
+        graphics.DrawEllipse(pen, boundingRect);
+        graphics.Dispose();
+        return bitmap;
+    }
+    
     public static Bitmap DrawFailedTestImage(
         this Bitmap bitmap,
         Rectangle[] rectangles,
@@ -13,7 +30,6 @@ internal static class TestBitmapExtensions
         int maxDistanceFromBarycenter,
         TestType testType)
     {
-#pragma warning disable CA1416
         bitmap.DrawRectangles(rectangles, new Pen(Color.Blue));
 
         if (testType != TestType.BarycenterTest)
@@ -25,7 +41,7 @@ internal static class TestBitmapExtensions
         bitmap.DrawEllipse(
             new Rectangle(barycenterPoint.X, barycenterPoint.Y, 1, 1),
             new Pen(Color.Red));
-#pragma warning restore CA1416
         return bitmap;
     }
+#pragma warning restore CA1416
 }
