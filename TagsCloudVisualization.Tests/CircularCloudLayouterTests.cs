@@ -8,6 +8,7 @@ using FakeItEasy;
 using FluentAssertions;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
+using TagCloud.ResultUtils;
 using TagCloud.SettingsProvider;
 using TagCloud.TagsCloudVisualization;
 
@@ -22,13 +23,17 @@ public class CircularCloudLayouterTests
     private static readonly int MaxDistanceFromBarycenter = 20;
     
     private ICircularCloudLayouter _circularCloudLayouter;
+    private ISettingsProvider _settingsProvider;
 
     [SetUp]
     public void SetUp()
     {
-        var settingsProvider = A.Fake<ISettingsProvider>();
-        A.CallTo(() => settingsProvider.GetSettings()).Returns(Settings.TestSettings);
-        _circularCloudLayouter = new CircularCloudLayouterImpl(settingsProvider);
+        _settingsProvider = A.Fake<ISettingsProvider>();
+        A.CallTo(() => _settingsProvider.GetAlgorithmSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Algorithm));
+        A.CallTo(() => _settingsProvider.GetImageSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Image));
+        _circularCloudLayouter = new CircularCloudLayouterImpl(_settingsProvider);
     }
 
     [OneTimeSetUp]
@@ -81,26 +86,13 @@ public class CircularCloudLayouterTests
 
     private static TestType DetermineTestType(string methodName)
     {
-        if (methodName == nameof(PutNextRectangle_ThrowsOnHeightOrWidth_BeingLessOrEqualToZero))
+        if (methodName == nameof(PutNextRectangle_ReturnsError_OnHeightOrWidth_BeingLessOrEqualToZero))
             return TestType.NoTearDown;
         
         if (methodName == nameof(RectanglesCommonBarycenterIsCloseToTheProvidedCenter))
             return TestType.BarycenterTest;
         
         return TestType.OtherTest;
-    }
-
-    [Test]
-    [Description("Проверяем, что поле CloudCenter бросает исключение, " +
-                 "если процесс генерации облака уже начался")]
-    public void CloudCenter_ThrowsIfLayoutContainsGeneratedRectangles()
-    {
-        _circularCloudLayouter.PutNextRectangle(new Size(1, 1));
-
-        Action act = () => _circularCloudLayouter.CloudCenter = new Point(1, 1);
-
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("Can not change cloud center after generation start");
     }
 
     [Test]
@@ -113,7 +105,7 @@ public class CircularCloudLayouterTests
     [TestCase(2, 3, 2, 0)]
     [TestCase(1, 2, -2, -1)]
     [TestCase(-1, 0, -1, 0)]
-    public void PutNextRectangle_ThrowsOnHeightOrWidth_BeingLessOrEqualToZero(
+    public void PutNextRectangle_ReturnsError_OnHeightOrWidth_BeingLessOrEqualToZero(
         int centerX,
         int centerY,
         int width,
@@ -121,10 +113,10 @@ public class CircularCloudLayouterTests
     {
         Arrange(centerX, centerY);
 
-        Action act = () => _circularCloudLayouter.PutNextRectangle(new Size(width, height));
-
-        act.Should()
-            .Throw<ArgumentOutOfRangeException>();
+        _circularCloudLayouter.PutNextRectangle(new Size(width, height))
+            .Success
+            .Should()
+            .BeFalse();
     }
 
     [Test]
@@ -194,7 +186,9 @@ public class CircularCloudLayouterTests
     
     private void Arrange(int centerX, int centerY)
     {
-        _circularCloudLayouter.CloudCenter = new Point(centerX, centerY);
+        A.CallTo(() => _settingsProvider.GetAlgorithmSettings())
+            .Returns(Result.FromValue(
+                Settings.TestSettings.Algorithm with { CloudCenter = new Point(centerX, centerY) }));
     }
 
     private IEnumerable<Rectangle> GenerateTestLayout((int, int)[] sizes)

@@ -22,7 +22,8 @@ public class DocxFileReaderTests
     private Task VerifyResult(string inputFile)
     {
         var sb = _docxFileReader.ReadAllLines(Path.GetFullPath(inputFile))
-            .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line.Value));
+            .Value!
+            .Aggregate(new StringBuilder(), (sb, line) => sb.AppendLine(line));
         
         return Verifier.Verify(sb.ToString());
     }

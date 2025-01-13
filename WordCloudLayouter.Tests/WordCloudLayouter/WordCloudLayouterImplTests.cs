@@ -1,11 +1,11 @@
 using System;
 using System.Drawing;
 using System.Linq;
-using System.Text;
 using FakeItEasy;
 using FluentAssertions;
 using NUnit.Framework;
 using TagCloud.Logger;
+using TagCloud.ResultUtils;
 using TagCloud.SettingsProvider;
 using TagCloud.TagsCloudVisualization;
 using TagCloud.WordCloudLayouter;
@@ -33,8 +33,10 @@ public class WordCloudLayouterImplTests
         _settingsProvider = A.Fake<ISettingsProvider>();
         _defaultStringMeasurer = (_, _) => SizeF.Empty;
 
-        A.CallTo(() => _settingsProvider.GetSettings())
-            .Returns(Settings.TestSettings);
+        A.CallTo(() => _settingsProvider.GetFontSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Font));
+        A.CallTo(() => _circularCloudLayouter.PutNextRectangle(A<Size>.Ignored))
+            .Returns(Result.FromValue(new Rectangle()));
         
         _wordCloudLayouter = new WordCloudLayouterImpl(
             _circularCloudLayouter, _wordStatistics, _logger, _settingsProvider);
@@ -48,7 +50,7 @@ public class WordCloudLayouterImplTests
 
         _wordCloudLayouter.GetWordCloudLayout(_defaultStringMeasurer).ToArray();
 
-        A.CallTo(() => _settingsProvider.GetSettings())
+        A.CallTo(() => _settingsProvider.GetFontSettings())
             .MustHaveHappenedOnceExactly();
     }
 
@@ -91,7 +93,7 @@ public class WordCloudLayouterImplTests
             .Returns(wordsArr);
 
         _wordCloudLayouter.GetWordCloudLayout(_defaultStringMeasurer)
-            .Select(info => info.Word)
+            .Select(info => info.Value?.Word)
             .Should()
             .Equal(wordsArr);
     }
@@ -104,13 +106,13 @@ public class WordCloudLayouterImplTests
     {
 #pragma warning disable CA1416
         var font = new Font(fontName, 8, FontStyle.Regular);
-        A.CallTo(() => _settingsProvider.GetSettings())
-            .Returns(Settings.TestSettings with { Font = font.FontFamily });
+        A.CallTo(() => _settingsProvider.GetFontSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Font with { Font = font.FontFamily }));
         A.CallTo(() => _wordStatistics.GetWords())
             .Returns(Enumerable.Repeat("abc", 10));
 
         _wordCloudLayouter.GetWordCloudLayout(_defaultStringMeasurer)
-            .Select(info => info.Font)
+            .Select(info => info.Value?.Font)
             .Should()
             .OnlyContain(f => f.Equals(font));
 #pragma warning restore CA1416
@@ -130,13 +132,16 @@ public class WordCloudLayouterImplTests
         
         A.CallTo(() => _wordStatistics.GetWords())
             .Returns(wordsArr);
-        
-        A.CallTo(() => _settingsProvider.GetSettings())
-            .Returns(Settings.TestSettings with {MinFontSize = minFontSize, MaxFontSize = maxFontSize});
+
+        A.CallTo(() => _settingsProvider.GetFontSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Font with
+            {
+                MinFontSize = minFontSize, MaxFontSize = maxFontSize
+            }));
         
 #pragma warning disable CA1416
         _wordCloudLayouter.GetWordCloudLayout(_defaultStringMeasurer)
-            .Select(info => info.Font)
+            .Select(info => info.Value?.Font)
             .Zip(Enumerable.Range(0, wordsArr.Length))
             .Should()
             .OnlyContain(tuple => Math.Abs(
@@ -154,12 +159,12 @@ public class WordCloudLayouterImplTests
         A.CallTo(() => _wordStatistics.GetWords())
             .Returns(Enumerable.Range(1, 10).Select(i => new string('a', i)));
         A.CallTo(() => _circularCloudLayouter.PutNextRectangle(A<Size>.Ignored))
-            .ReturnsLazily((Size size) => new Rectangle(new Point(0, 0), size));
+            .ReturnsLazily((Size size) => TagCloud.ResultUtils.Result.FromValue(new Rectangle(new Point(0, 0), size)));
         var stringMeasurer = (string str, Font _) => new SizeF(str.Length * fontSize, fontSize);
 
         _wordCloudLayouter.GetWordCloudLayout(stringMeasurer)
             .Should()
-            .OnlyContain(info => IsGeneratedRectangleInBounds(info, stringMeasurer));
+            .OnlyContain(info => IsGeneratedRectangleInBounds(info.Value!, stringMeasurer));
     }
 
     private bool IsGeneratedRectangleInBounds(WordLayoutInfo info, Func<string, Font, SizeF> stringMeasurer)

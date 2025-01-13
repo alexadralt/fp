@@ -24,8 +24,6 @@ internal class JsonSizeConverter : JsonConverter<Size>
         
         reader.Read();
         
-        if (height <= 0 || width <= 0)
-            return Size.Empty;
         return new Size(width, height);
     }
 

@@ -24,8 +24,6 @@ internal class JsonPointConverter : JsonConverter<Point>
         
         reader.Read();
         
-        if (y <= 0 || x <= 0)
-            return Point.Empty;
         return new Point(x, y);
     }
 

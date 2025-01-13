@@ -23,102 +23,91 @@ public class SettingsProviderImpl(ILogger logger) : ISettingsProvider
 
     private Settings? _settings;
 
-    public Settings GetSettings()
+    public Result<FontSettings> GetFontSettings()
     {
-        if (_settings != null)
-            return _settings;
-
-        var settingsResult = LoadSettings();
-        if (settingsResult.Success)
-            _settings = settingsResult.Value!;
-        else
-        {
-            _settings = Settings.DefaultSettings;
-            
-            logger.Warning($"Failed to load settings file: {settingsResult.Error}");
-            logger.Warning("Using default settings.");
-            
-            if (!Path.Exists(_settingsFile))
-            {
-                var saveSettingsResult = SaveSettings();
-                if (saveSettingsResult.Success)
-                    logger.Info($"Created settings.json file at {Path.GetFullPath(_settingsFile)}");
-                else
-                    logger.Error($"Could not create settings.json file at {Path.GetFullPath(_settingsFile)}, " +
-                                 $"because: {saveSettingsResult.Error}");
-            }
-        }
-        
-        return _settings;
+        return GetSettings()
+            .Then(settings => settings.Font);
     }
 
-    public Result<Nothing> UpdateSettings(Settings settings)
+    public Result<ImageSettings> GetImageSettings()
     {
-        if (_settings == null)
-            return Result.Failure("Settings object is null");
-        if (settings != _settings)
+        return GetSettings()
+            .Then(settings => settings.Image);
+    }
+
+    public Result<AlgorithmSettings> GetAlgorithmSettings()
+    {
+        return GetSettings()
+            .Then(settings => settings.Algorithm);
+    }
+
+    private Result<Settings> GetSettings()
+    {
+        if (_settings != null)
+            return Result.FromValue(_settings);
+
+        if (!File.Exists(_settingsFile))
         {
-            _settings = settings;
-            return SaveSettings();
+            _settings = Settings.DefaultSettings;
+            return SaveSettings()
+                .ChangeError(err => $"Could not create settings.json file at {Path.GetFullPath(_settingsFile)}, " +
+                                    $"because: {err}")
+                .Then(_ => logger.Info($"Created settings.json file at {Path.GetFullPath(_settingsFile)}"))
+                .Then(_ => _settings);
         }
-        
-        return Result.Success();
+
+        return LoadSettings()
+            .ChangeError(err => $"Failed to load settings file:\n{err}")
+            .Then(settings => _settings = settings);
     }
 
     private Result<Settings> LoadSettings()
     {
-        Settings? settings;
-        try
-        {
-            var json = File.ReadAllText(_settingsFile);
-            settings = JsonSerializer.Deserialize<Settings>(json, _options);
-        }
-        catch (Exception e)
-        {
-            return Result.FromError<Settings>(e.Message);
-        }
-        
-        if (settings == null)
-            return Result.FromError<Settings>("Could not parse settings file.");
-        if (!settings.TextColor.IsKnownColor)
-            return Result.FromError<Settings>("Unknown TextColor value");
-        if (!settings.BackgroundColor.IsKnownColor)
-            return Result.FromError<Settings>("Unknown BackgroundColor value");
-        if (settings.Font == null)
-        {
-            var names = FontFamily.Families.Select(family => family.Name).ToArray();
-            return Result.FromError<Settings>(
-                $"Unknown Font value. Available options are:\n{string.Join(", ", names)}");
-        }
-        if (settings.MinFontSize <= 0)
-            return Result.FromError<Settings>("MinFontSize must be greater than zero");
-        if (settings.MaxFontSize <= 0)
-            return Result.FromError<Settings>("MaxFontSize must be greater than zero");
-        if (settings.ImageSize == Size.Empty)
-            return Result.FromError<Settings>("ImageSize contains incorrect values");
-        if (settings.CloudCenter == Point.Empty)
-            return Result.FromError<Settings>("CloudCenter contains incorrect values");
-        if (settings.AngleStep <= 0)
-            return Result.FromError<Settings>("AngleStep must be greater than zero");
-        if (settings.TracingStep <= 0)
-            return Result.FromError<Settings>("TracingStep must be greater than zero");
+        return Result.FromValue(_settingsFile)
+            .Try(file =>
+            {
+                var json = File.ReadAllText(file);
+                return JsonSerializer.Deserialize<Settings>(json, _options)!;
+            })
+            .Validate(settings => settings != null, "Could not parse settings file.")
+            .Validate(settings => settings!.Image.TextColor.IsKnownColor,
+                "Unknown TextColor value. Known values are:\n"
+                + string.Join(", ", GetKnownColors()))
+            .Validate(settings => settings!.Image.BackgroundColor.IsKnownColor,
+                "Unknown BackgroundColor value. Known values are:\n"
+                + string.Join(", ", GetKnownColors()))
+            .Validate(settings => settings!.Font.Font != null,
+                "Unknown Font value. Available options are:\n" +
+                string.Join(", ", FontFamily.Families.Select(family => family.Name).ToArray()))
+            .Validate(settings => settings!.Font.MinFontSize > 0, "MinFontSize must be greater than zero")
+            .Validate(settings => settings!.Font.MaxFontSize > 0, "MaxFontSize must be greater than zero")
+            .Validate(settings => settings!.Image.ImageSize.Width > 0, "Image width must be greater than zero")
+            .Validate(settings => settings!.Image.ImageSize.Height > 0, "Image height must be greater than zero")
+            .Validate(settings => settings!.Algorithm.CloudCenter.Y > 0,
+                "CloudCenter Y must be greater than zero")
+            .Validate(settings => settings!.Algorithm.CloudCenter.X > 0,
+                "CloudCenter X must be greater than zero")
+            .Validate(settings => settings!.Algorithm.AngleStep > 0, "AngleStep must be greater than zero")
+            .Validate(settings => settings!.Algorithm.TracingStep > 0, "TracingStep must be greater than zero")
+            .Validate(settings => settings!.Algorithm.TracingStep < 1, "TracingStep must be lees than 1")
+            .Validate(settings => settings!.Algorithm.Density > 0, "Density must be greater than zero")
+            .Validate(settings => settings!.Algorithm.Density < 1, "Density must be less than one");
+    }
 
-        return Result.FromValue(settings);
+    private IEnumerable<string> GetKnownColors()
+    {
+        return Enum.GetValuesAsUnderlyingType<KnownColor>()
+            .Cast<KnownColor>().Select(color => Color.FromKnownColor(color).Name);
     }
 
     private Result<Nothing> SaveSettings()
     {
-        try
-        {
-            var json = JsonSerializer.Serialize(_settings, _options);
-            using var writer = new StreamWriter(_settingsFile);
-            writer.Write(json);
-        }
-        catch (Exception e)
-        {
-            return Result.Failure(e.Message);
-        }
-        
-        return Result.Success();
+        return Result.Success()
+            .Try(() =>
+            {
+                var json = JsonSerializer.Serialize(_settings, _options);
+                using var writer = new StreamWriter(_settingsFile);
+                writer.Write(json);
+            });
     }
 }

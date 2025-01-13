@@ -10,15 +10,7 @@ public abstract class BitmapImageFileWriter : IImageFileWriter
     protected abstract ImageFormat Format { get; }
     public Result<Nothing> SaveImage(Bitmap image, string filePath)
     {
-        try
-        {
-            image.Save(Path.GetFullPath(filePath), Format);
-        }
-        catch (Exception ex)
-        {
-            return Result.Failure(ex.Message);
-        }
-        
-        return Result.Success();
+        return Result.Success()
+            .Try(() => image.Save(Path.GetFullPath(filePath), Format));
     }
 }

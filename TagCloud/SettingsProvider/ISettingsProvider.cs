@@ -4,6 +4,7 @@ namespace TagCloud.SettingsProvider;
 
 public interface ISettingsProvider
 {
-    public Settings GetSettings();
-    public Result<Nothing> UpdateSettings(Settings settings);
+    public Result<FontSettings> GetFontSettings();
+    public Result<ImageSettings> GetImageSettings();
+    public Result<AlgorithmSettings> GetAlgorithmSettings();
 }

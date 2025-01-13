@@ -47,8 +47,12 @@ public class TagCloudIntegrationTests
         _fileHandler = A.Fake<IFileHandler>();
         _settingsProvider = A.Fake<ISettingsProvider>();
         
-        A.CallTo(() => _settingsProvider.GetSettings())
-            .Returns(Settings.TestSettings);
+        A.CallTo(() => _settingsProvider.GetImageSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Image));
+        A.CallTo(() => _settingsProvider.GetAlgorithmSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Algorithm));
+        A.CallTo(() => _settingsProvider.GetFontSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Font));
         
         var fileReaderRegistry = new FileReaderRegistry([new TxtFileReader()]);
         var fileWriterRegistry = new ImageFileWriterRegistry([new PngImageFileWriter()]);
@@ -83,15 +87,17 @@ public class TagCloudIntegrationTests
     [TestCase("There Are Five Words")]
     public Task TryGenerateImage_GeneratesImage(string words)
     {
-        A.CallTo(() => _settingsProvider.GetSettings())
-            .Returns(Settings.TestSettings with { MaxFontSize = 20 });
+        A.CallTo(() => _settingsProvider.GetFontSettings())
+            .Returns(Result.FromValue(Settings.TestSettings.Font with { MaxFontSize = 20 }));
         A.CallTo(() => _fileHandler.ReadAllLines(A<string>.Ignored))
-            .Returns(words.Split(' ').Select(Result.FromValue));
+            .Returns(Result.FromValue(words.Split(' ')));
 
         var outputFile = "GeneratesImageAndReturnsTrue.png";
         
-        _imageGenerator.GenerateImageFromFile(String.Empty);
-        _imageGenerator.SaveImageToFile(outputFile);
+#pragma warning disable CA1416
+        _imageGenerator.GenerateImageFromFile(String.Empty)
+            .Then(image => _imageGenerator.SaveImageToFile(image, outputFile));
+#pragma warning restore CA1416
         return Verifier.VerifyFile(outputFile);
     }
 
@@ -100,8 +106,10 @@ public class TagCloudIntegrationTests
     {
         var outputFile = "HarryPotter.png";
         
-        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
-        _imageGenerator.SaveImageToFile(outputFile);
+#pragma warning disable CA1416
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile)
+            .Then(image => _imageGenerator.SaveImageToFile(image, outputFile));
+#pragma warning restore CA1416
 
         return Verifier.VerifyFile(outputFile);
     }
@@ -112,8 +120,10 @@ public class TagCloudIntegrationTests
         var outputFile = "HarryPotter_WithDelimiters.png";
         _imageGenerator.LoadWordDelimitersFile(_defaultDelimitersFile);
         
-        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
-        _imageGenerator.SaveImageToFile(outputFile);
+#pragma warning disable CA1416
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile)
+            .Then(image => _imageGenerator.SaveImageToFile(image, outputFile));
+#pragma warning restore CA1416
         
         return Verifier.VerifyFile(outputFile);
     }
@@ -125,8 +135,10 @@ public class TagCloudIntegrationTests
         _imageGenerator.LoadWordDelimitersFile(_defaultDelimitersFile);
         _imageGenerator.LoadBoringWordsFile(_defaultBoringWordsFile);
         
-        _imageGenerator.GenerateImageFromFile(_defaultInputFile);
-        _imageGenerator.SaveImageToFile(outputFile);
+#pragma warning disable CA1416
+        _imageGenerator.GenerateImageFromFile(_defaultInputFile)
+            .Then(image => _imageGenerator.SaveImageToFile(image, outputFile));
+#pragma warning restore CA1416
         
         return Verifier.VerifyFile(outputFile);
     }

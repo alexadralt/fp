@@ -23,26 +23,15 @@ public class WordDelimiterProviderImpl : IWordDelimiterProvider
         return _delimiters.ToArray();
     }
 
-    public Result<Nothing> LoadDelimitersFile(string path)
+    public Result<Nothing> LoadDelimitersFile(string filePath)
     {
-        var extension = Path.GetExtension(path);
-        var fileReaderResult = _fileReaderRegistry.GetFileReader(extension);
-        if (fileReaderResult.Success)
-        {
-            var fileReader = fileReaderResult.Value!;
-            foreach (var line in fileReader.ReadAllLines(Path.GetFullPath(path)))
-            {
-                if (line.Success)
-                    _delimiters.Add(line.Value!);
-                else
-                    return Result.Failure(line.Error!);
-            }
-        }
-        else
-        {
-            return Result.Failure(fileReaderResult.Error!);
-        }
-
-        return Result.Success();
+        return Result.FromValue(filePath)
+            .Validate(path => !string.IsNullOrWhiteSpace(path), "File was not specified.")
+            .Then(Path.GetExtension)
+            .Validate(extension => !string.IsNullOrWhiteSpace(extension),
+                $"Missing file extension: {filePath} <---")
+            .Then(extension => _fileReaderRegistry.GetFileReader(extension!))
+            .Then(fr => fr.ReadAllLines(Path.GetFullPath(filePath)))
+            .ForEach(line => _delimiters.Add(line));
     }
 }

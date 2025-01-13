@@ -5,6 +5,6 @@ namespace TagCloud.FileReader;
 
 public interface IFileReader
 {
-    public IEnumerable<Result<string>> ReadAllLines(string filePath);
+    public Result<string[]> ReadAllLines(string filePath);
     public string FileExtension { get; }
 }

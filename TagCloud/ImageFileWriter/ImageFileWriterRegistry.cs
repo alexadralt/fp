@@ -13,7 +13,7 @@ public class ImageFileWriterRegistry
             _imageFileWriters.TryAdd(writer.Extension, writer);
     }
 
-    public Result<IImageFileWriter> TryGetImageFileWriter(string extension)
+    public Result<IImageFileWriter> GetImageFileWriter(string extension)
     {
         if (_imageFileWriters.TryGetValue(extension, out var imageFileWriter))
             return Result.FromValue(imageFileWriter);

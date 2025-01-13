@@ -6,7 +6,7 @@ namespace TagCloud.FileHandler;
 
 public interface IFileHandler
 {
-    public IEnumerable<Result<string>> ReadAllLines(string filePath);
+    public Result<string[]> ReadAllLines(string filePath);
     public Result<Nothing> SaveImage(Bitmap image, string filePath);
     
     public bool IsSupportedOutputFileExtension(string extension);

@@ -20,11 +20,6 @@ public class FileReaderRegistry
 
         return Result.FromError<IFileReader>($"Extension \"{fileExtension}\" is not supported.\n" +
                                              $"Supported extensions are: " +
-                                             $"{string.Join(", ", GetSupportedFileExtensions())}");
-    }
-
-    private IEnumerable<string> GetSupportedFileExtensions()
-    {
-        return _fileReaders.Keys;
+                                             $"{string.Join(", ", _fileReaders.Keys)}");
     }
 }

@@ -1,67 +1,81 @@
 using System.Drawing;
+using TagCloud.ResultUtils;
 using TagCloud.SettingsProvider;
 
 namespace TagCloud.TagsCloudVisualization;
 
-public class CircularCloudLayouterImpl : ICircularCloudLayouter
+public class CircularCloudLayouterImpl(ISettingsProvider settingsProvider) : ICircularCloudLayouter
 {
-    public Point CloudCenter
-    {
-        get => _cloudCenter;
-        set
-        {
-            if (_generatedLayout.Count > 0)
-            {
-                throw new InvalidOperationException("Can not change cloud center after generation start");
-            }
-            _cloudCenter = value;
-        }
-    }
-    
     public IEnumerable<Rectangle> Layout => _generatedLayout.AsEnumerable();
 
-    private readonly float _tracingStep;
-    private readonly float _maxTracingDistance;
+    private readonly List<Rectangle> _generatedLayout = new();
+    private float _tracingStep;
+    private float _maxTracingDistance;
     private Point _cloudCenter;
-    private readonly List<Rectangle> _generatedLayout;
+    private Size _imageSize;
     private double _nextAngle;
-    private readonly double _angleStep;
+    private double _angleStep;
     private float _startingStep;
     private float _density;
-    
-    public CircularCloudLayouterImpl(ISettingsProvider settingsProvider)
+    private bool _loadedSettings;
+
+    public Result<Rectangle> PutNextRectangle(Size rectangleSize)
     {
-        _generatedLayout = new List<Rectangle>();
+        return LoadSettings()
+            .Then(_ => PutNextRectangleInternal(rectangleSize));
+    }
+
+    private Result<Nothing> LoadSettings()
+    {
+        if (_loadedSettings)
+            return Result.Success();
         
-        var settings = settingsProvider.GetSettings();
-        CloudCenter = settings.CloudCenter;
-        var diameter = Math.Min(settings.ImageSize.Width, settings.ImageSize.Height);
-        _maxTracingDistance = (float)diameter / 2;
-        
+        return settingsProvider.GetAlgorithmSettings()
+            .Then(LoadAlgorithmSettings)
+            .Then(_ => settingsProvider.GetImageSettings())
+            .Then(LoadImageSettings)
+            .Then(_ => _loadedSettings = true)
+            .Then(_ => Result.Success());
+    }
+
+    private void LoadAlgorithmSettings(AlgorithmSettings settings)
+    {
+        _cloudCenter = settings.CloudCenter;
         _tracingStep = settings.TracingStep;
         _angleStep = settings.AngleStep;
         _density = settings.Density;
     }
 
-    public Rectangle PutNextRectangle(Size rectangleSize)
+    private void LoadImageSettings(ImageSettings settings)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Width, "Width");
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(rectangleSize.Height, "Height");
+        _imageSize = settings.ImageSize;
+        var diameter = Math.Min(_imageSize.Width, _imageSize.Height);
+        _maxTracingDistance = (float)diameter / 2;
+    }
+    
+    private Result<Rectangle> PutNextRectangleInternal(Size rectangleSize)
+    {
+        if (rectangleSize.Width <= 0 || rectangleSize.Height <= 0)
+            return Result.FromError<Rectangle>("Invalid rectangle size");
         
         if (_generatedLayout.Count == 0)
         {
             var rectangle = new Rectangle(
-                CloudCenter.X - rectangleSize.Width / 2,
-                CloudCenter.Y - rectangleSize.Height / 2,
+                _cloudCenter.X - rectangleSize.Width / 2,
+                _cloudCenter.Y - rectangleSize.Height / 2,
                 rectangleSize.Width,
                 rectangleSize.Height);
             _generatedLayout.Add(rectangle);
-            return rectangle;
+            return Result.FromValue(rectangle);
         }
 
-        var nextRectangle = GetNextRectangle(rectangleSize);
-        _generatedLayout.Add(nextRectangle);
-        return nextRectangle;
+        return Result.FromValue(GetNextRectangle(rectangleSize))
+            .Validate(rect => !rect.IsEmpty
+                              && rect.Right <= _imageSize.Width
+                              && rect.Bottom <= _imageSize.Height
+                              && rect.Left >= 0 && rect.Top >= 0,
+                "Word cloud does not fit on image of provided size")
+            .Then(rect => _generatedLayout.Add(rect));
     }
 
     private Rectangle GetNextRectangle(Size rectangleSize)
@@ -95,7 +109,7 @@ public class CircularCloudLayouterImpl : ICircularCloudLayouter
 
         return resultList.Count > 0
             ? resultList.MinBy(tuple => tuple.Item2).Item1
-            : throw new Exception("Word cloud does not fit on image of provided size");
+            : Rectangle.Empty;
     }
 
     private bool TryFindGoodRectanglePosition(Point posToPlace, Size rectangleSize, out Rectangle result)
@@ -126,7 +140,7 @@ public class CircularCloudLayouterImpl : ICircularCloudLayouter
         
         foreach (var option in possibleOptions)
         {
-            bool intersects = false;
+            var intersects = false;
             foreach (var rectangle in _generatedLayout)
             {
                 if (rectangle.IntersectsWith(option))
@@ -150,8 +164,8 @@ public class CircularCloudLayouterImpl : ICircularCloudLayouter
     private (float, PointF) FindNextAvailablePosByTracingLine(PointF direction, float startingStep = 0.0f)
     {
         var nextPos = new PointF(
-            CloudCenter.X + direction.X * _maxTracingDistance * _tracingStep,
-            CloudCenter.Y + direction.Y * _maxTracingDistance * _tracingStep);
+            _cloudCenter.X + direction.X * _maxTracingDistance * _tracingStep,
+            _cloudCenter.Y + direction.Y * _maxTracingDistance * _tracingStep);
         var currentStep = startingStep == 0.0f ? _tracingStep : startingStep;
         var notInRectangle = false;
         while (!notInRectangle)
@@ -167,8 +181,8 @@ public class CircularCloudLayouterImpl : ICircularCloudLayouter
             }
             currentStep += _tracingStep;
             nextPos = new PointF(
-                CloudCenter.X + direction.X * _maxTracingDistance * currentStep,
-                CloudCenter.Y + direction.Y * _maxTracingDistance * currentStep);
+                _cloudCenter.X + direction.X * _maxTracingDistance * currentStep,
+                _cloudCenter.Y + direction.Y * _maxTracingDistance * currentStep);
         }
 
         return (currentStep, nextPos);

@@ -4,6 +4,7 @@ namespace TagCloud.TagsCloudVisualization;
 
 public static class RectangleCollectionExtensions
 {
+    // used only in tests nocheckin
     public static bool CheckForAllPairs(
         this IEnumerable<Rectangle> rectangles,
         Func<(Rectangle, Rectangle), bool> predicate)
